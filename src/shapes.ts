@@ -60,3 +60,26 @@ export const rotateMatrix = (matrix: number[][]): number[][] => {
 
   return rotatedMatrix;
 };
+
+export function scaleMatrix(matrix: number[][], scale: number): number[][] {
+  const numRows = matrix.length;
+  const numCols = matrix[0].length;
+
+  const scaledMatrix: number[][] = [];
+
+  for (let i = 0; i < numRows * scale; i++) {
+    const row: number[] = [];
+
+    for (let j = 0; j < numCols * scale; j++) {
+      const originalRow = Math.floor(i / scale);
+      const originalCol = Math.floor(j / scale);
+      const originalValue = matrix[originalRow][originalCol];
+
+      row.push(originalValue);
+    }
+
+    scaledMatrix.push(row);
+  }
+
+  return scaledMatrix;
+}

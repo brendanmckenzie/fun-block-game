@@ -1,4 +1,3 @@
-import { config } from "./config";
 import { randomShapeIndex, rotateMatrix, shapeColours, shapes } from "./shapes";
 
 export type Block = {
@@ -13,12 +12,12 @@ export type Block = {
 export const randomBlock = (): Block => {
   const shapeIdx = randomShapeIndex();
   const shape = shapes[shapeIdx];
-  const colour = shapeColours[shapeIdx];
+  const colour = shapeColours[randomShapeIndex()];
 
   return {
-    x: Math.floor(config.blocks.x / 2) - Math.ceil((shape[0].length - 1) / 2),
+    x: 0,
     y: 0,
-    shape: shapes[shapeIdx],
+    shape,
     height: shape.length,
     width: shape[0].length,
     colour,
