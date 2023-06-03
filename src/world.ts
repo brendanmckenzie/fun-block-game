@@ -173,7 +173,7 @@ export class World {
     const block = randomBlock();
     block.x =
       Math.floor(this.config.blocksWide / 2) - Math.ceil(block.width / 2);
-    block.colour = "red";
+    // block.colour = "red";
     this.block = block;
   }
 
