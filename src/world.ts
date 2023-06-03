@@ -118,6 +118,26 @@ export class World {
         }
   }
 
+  private checkContiguous(particles: Particle[][]) {
+    // see if there's a contiguous line of one colour from one side to the other
+    for (let y = particles.length - 1; y >= 0; y--) {
+      const row = particles[y];
+      const colours = row.map((p) => p.colour);
+      const contiguous = colours.every((c, _, arr) => c && c === arr[0]);
+      if (contiguous) {
+        // remove row
+        for (let i = 0; i < this.config.particlePerBlock; i++) {
+          particles.splice(y, this.config.particlePerBlock);
+          particles.unshift(
+            Array.from({ length: this.particlesWide }, () => ({
+              type: "empty",
+            }))
+          );
+        }
+      }
+    }
+  }
+
   private placeBlock(block: Block) {
     if (block.y === 1) {
       // game over
@@ -136,6 +156,8 @@ export class World {
             colour: block.colour,
           };
         }
+
+    this.checkContiguous(this.particles);
   }
 
   private transformBlockPosition(block: Block) {
@@ -151,7 +173,7 @@ export class World {
     const block = randomBlock();
     block.x =
       Math.floor(this.config.blocksWide / 2) - Math.ceil(block.width / 2);
-
+    block.colour = "red";
     this.block = block;
   }
 
