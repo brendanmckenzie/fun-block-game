@@ -5,7 +5,7 @@ export enum Rotation {
   D = 270,
 }
 
-export const shapeColours = ["red", "green", "blue", "purple", "orange"];
+export const shapeColours = ["red", "green", "blue" /*, "purple", "orange"*/];
 export const shapes = [
   [
     // T

@@ -1,9 +1,8 @@
-import { scaleMatrix } from "./shapes";
 import { World } from "./world";
 
 export type RendererConfig = {
   canvas: HTMLCanvasElement;
-  debug?: HTMLPreElement;
+  debug?: HTMLElement;
   world: World;
   pixelsPerParticle: number;
 };
@@ -26,6 +25,7 @@ export class Renderer {
       throw new Error("context not found");
     }
 
+    context.scale(this.config.pixelsPerParticle, this.config.pixelsPerParticle);
     this.context = context;
   }
 
@@ -49,7 +49,6 @@ export class Renderer {
           particles,
           config: { particlePerBlock },
         },
-        pixelsPerParticle,
       },
       context,
     } = this;
@@ -72,10 +71,10 @@ export class Renderer {
         for (let x = 0; x < block.shape[0].length; x++)
           if (block.shape[y][x]) {
             context.fillRect(
-              (block.x + x) * pixelsPerParticle * particlePerBlock,
-              (block.y + y) * pixelsPerParticle * particlePerBlock,
-              pixelsPerParticle * particlePerBlock,
-              pixelsPerParticle * particlePerBlock
+              (block.x + x) * particlePerBlock,
+              (block.y + y) * particlePerBlock,
+              particlePerBlock,
+              particlePerBlock
             );
           }
     }
@@ -84,12 +83,7 @@ export class Renderer {
       row.forEach((particle, x) => {
         if (particle.type !== "empty") {
           context.fillStyle = particle.colour || "white";
-          context.fillRect(
-            x * pixelsPerParticle,
-            y * pixelsPerParticle,
-            pixelsPerParticle,
-            pixelsPerParticle
-          );
+          context.fillRect(x, y, 1, 1);
         }
       });
     });

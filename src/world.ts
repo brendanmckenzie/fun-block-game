@@ -5,10 +5,11 @@ export type WorldConfig = {
   blocksWide: number;
   blocksHigh: number;
   particlePerBlock: number;
+  onScoreChange?: (score: number) => void;
 };
 
-type ParticleType = "empty" | "block" | "particle";
-type Particle = {
+type ParticleType = "empty" | "particle";
+export type Particle = {
   type: ParticleType;
   colour?: string;
 };
@@ -23,6 +24,8 @@ export class World {
   private particleInterval: number | null;
 
   public block: Block;
+
+  private score: number;
 
   constructor(public config: WorldConfig) {
     this.particlesHigh = config.blocksHigh * config.particlePerBlock;
@@ -113,6 +116,8 @@ export class World {
         }
       }
     }
+
+    this.checkContiguous(this.particles);
   }
 
   private checkCollision() {
@@ -128,9 +133,7 @@ export class World {
             offset.y + y + 1 <
             particles.length - this.config.particlePerBlock - 1
           ) {
-            if (
-              particles[offset.y + y + 1]?.[offset.x + x].type === "particle"
-            ) {
+            if (particles[offset.y + y]?.[offset.x + x].type === "particle") {
               this.placeBlock(block);
               this.newBlock();
               break out;
@@ -140,23 +143,30 @@ export class World {
   }
 
   private checkContiguous(particles: Particle[][]) {
-    // see if there's a contiguous line of one colour from one side to the other
+    // TODO: expand this to traverse over multiple rows
+    const scoreBefore = this.score;
     for (let y = particles.length - 1; y >= 0; y--) {
       const row = particles[y];
-      const colours = row.map((p) => p.colour);
-      const contiguous = colours.every((c, _, arr) => c && c === arr[0]);
-      if (contiguous) {
-        // remove row
-        for (let i = 0; i < this.config.particlePerBlock; i++) {
-          particles.splice(y, this.config.particlePerBlock);
-          particles.unshift(
-            Array.from({ length: this.particlesWide }, () => ({
-              type: "empty",
-            }))
-          );
+      if (row[0].type === "particle") {
+        if (
+          row.every((p) => p.colour === row[0].colour && p.type === "particle")
+        ) {
+          for (let x = 0; x < row.length; x++) {
+            particles[y][x] = { type: "empty" };
+          }
+
+          this.score += row.length;
         }
       }
     }
+
+    if (scoreBefore !== this.score) {
+      this.updateScore();
+    }
+  }
+
+  private updateScore() {
+    this.config.onScoreChange?.(this.score);
   }
 
   private placeBlock(block: Block) {
@@ -177,8 +187,6 @@ export class World {
             colour: block.colour,
           };
         }
-
-    this.checkContiguous(this.particles);
   }
 
   private transformBlockPosition(block: Block) {
@@ -199,6 +207,8 @@ export class World {
   }
 
   private reset() {
+    this.score = 0;
+    this.updateScore();
     this.particles = Array.from({ length: this.particlesHigh }, () =>
       Array.from({ length: this.particlesWide }, () => ({
         type: "empty",

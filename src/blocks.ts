@@ -12,7 +12,7 @@ export type Block = {
 export const randomBlock = (): Block => {
   const shapeIdx = randomShapeIndex();
   const shape = shapes[shapeIdx];
-  const colour = shapeColours[randomShapeIndex()];
+  const colour = shapeColours[Math.floor(Math.random() * shapeColours.length)];
 
   return {
     x: 0,

@@ -577,12 +577,16 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 var _renderer = require("./renderer");
 var _world = require("./world");
 const canvas = document.querySelector("canvas");
-const debug = document.querySelector("pre") || undefined;
+const debug = document.getElementById("debug") || undefined;
+const score = document.getElementById("score") || undefined;
 if (!canvas) throw new Error("canvas not found");
 const world = new (0, _world.World)({
     blocksHigh: 20,
     blocksWide: 11,
-    particlePerBlock: 4
+    particlePerBlock: 4,
+    onScoreChange: (val)=>{
+        if (score) score.innerText = `Score: ${val}`;
+    }
 });
 const renderer = new (0, _renderer.Renderer)({
     world,
@@ -612,24 +616,25 @@ class Renderer {
     obtainContext() {
         const context = this.config.canvas.getContext("2d");
         if (!context) throw new Error("context not found");
+        context.scale(this.config.pixelsPerParticle, this.config.pixelsPerParticle);
         this.context = context;
     }
     start() {
         requestAnimationFrame(this.callback);
     }
     render() {
-        const { config: { canvas , debug , world: { block , particles , config: { particlePerBlock  }  } , pixelsPerParticle  } , context  } = this;
+        const { config: { canvas , debug , world: { block , particles , config: { particlePerBlock  }  }  } , context  } = this;
         if (debug) debug.innerText = particles.map((row)=>row.map((particle)=>particle.type === "empty" ? "0" : "1").join("")).join("\n");
         context.clearRect(0, 0, canvas.width, canvas.height);
         if (block) {
             context.fillStyle = block.colour;
-            for(let y = 0; y < block.shape.length; y++)for(let x = 0; x < block.shape[0].length; x++)if (block.shape[y][x]) context.fillRect((block.x + x) * pixelsPerParticle * particlePerBlock, (block.y + y) * pixelsPerParticle * particlePerBlock, pixelsPerParticle * particlePerBlock, pixelsPerParticle * particlePerBlock);
+            for(let y = 0; y < block.shape.length; y++)for(let x = 0; x < block.shape[0].length; x++)if (block.shape[y][x]) context.fillRect((block.x + x) * particlePerBlock, (block.y + y) * particlePerBlock, particlePerBlock, particlePerBlock);
         }
         particles.forEach((row, y)=>{
             row.forEach((particle, x)=>{
                 if (particle.type !== "empty") {
                     context.fillStyle = particle.colour || "white";
-                    context.fillRect(x * pixelsPerParticle, y * pixelsPerParticle, pixelsPerParticle, pixelsPerParticle);
+                    context.fillRect(x, y, 1, 1);
                 }
             });
         });
@@ -770,6 +775,7 @@ class World {
                 }
             }
         }
+        this.checkContiguous(this.particles);
     }
     checkCollision() {
         const { block , particles  } = this;
@@ -777,7 +783,7 @@ class World {
         const scaledShape = (0, _shapes.scaleMatrix)(block.shape, this.config.particlePerBlock);
         out: for(let y = 0; y < scaledShape.length; y++)for(let x = 0; x < scaledShape[0].length; x++)if (scaledShape[y][x]) {
             if (offset.y + y + 1 < particles.length - this.config.particlePerBlock - 1) {
-                if (particles[offset.y + y + 1]?.[offset.x + x].type === "particle") {
+                if (particles[offset.y + y]?.[offset.x + x].type === "particle") {
                     this.placeBlock(block);
                     this.newBlock();
                     break out;
@@ -786,21 +792,23 @@ class World {
         }
     }
     checkContiguous(particles) {
-        // see if there's a contiguous line of one colour from one side to the other
+        // TODO: expand this to traverse over multiple rows
+        const scoreBefore = this.score;
         for(let y = particles.length - 1; y >= 0; y--){
             const row = particles[y];
-            const colours = row.map((p)=>p.colour);
-            const contiguous = colours.every((c, _, arr)=>c && c === arr[0]);
-            if (contiguous) // remove row
-            for(let i = 0; i < this.config.particlePerBlock; i++){
-                particles.splice(y, this.config.particlePerBlock);
-                particles.unshift(Array.from({
-                    length: this.particlesWide
-                }, ()=>({
+            if (row[0].type === "particle") {
+                if (row.every((p)=>p.colour === row[0].colour && p.type === "particle")) {
+                    for(let x = 0; x < row.length; x++)particles[y][x] = {
                         type: "empty"
-                    })));
+                    };
+                    this.score += row.length;
+                }
             }
         }
+        if (scoreBefore !== this.score) this.updateScore();
+    }
+    updateScore() {
+        this.config.onScoreChange?.(this.score);
     }
     placeBlock(block) {
         if (block.y === 1) {
@@ -814,7 +822,6 @@ class World {
             type: "particle",
             colour: block.colour
         };
-        this.checkContiguous(this.particles);
     }
     transformBlockPosition(block) {
         const { x , y  } = block;
@@ -830,6 +837,8 @@ class World {
         this.block = block;
     }
     reset() {
+        this.score = 0;
+        this.updateScore();
         this.particles = Array.from({
             length: this.particlesHigh
         }, ()=>Array.from({
@@ -849,7 +858,7 @@ var _shapes = require("./shapes");
 const randomBlock = ()=>{
     const shapeIdx = (0, _shapes.randomShapeIndex)();
     const shape = (0, _shapes.shapes)[shapeIdx];
-    const colour = (0, _shapes.shapeColours)[(0, _shapes.randomShapeIndex)()];
+    const colour = (0, _shapes.shapeColours)[Math.floor(Math.random() * (0, _shapes.shapeColours).length)];
     return {
         x: 0,
         y: 0,
@@ -889,9 +898,7 @@ var Rotation;
 const shapeColours = [
     "red",
     "green",
-    "blue",
-    "purple",
-    "orange"
+    "blue" /*, "purple", "orange"*/ 
 ];
 const shapes = [
     [
