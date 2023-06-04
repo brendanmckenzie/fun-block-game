@@ -72,7 +72,7 @@ export class World {
   private progressBlock() {
     this.block.y++;
 
-    if (this.block.y + this.block.height >= this.config.blocksHigh + 1) {
+    if (this.block.y + this.block.height >= this.config.blocksHigh) {
       // block at bottom
       this.placeBlock(this.block);
       this.newBlock();
@@ -82,13 +82,34 @@ export class World {
   }
 
   private progressParticles() {
-    for (let y = this.particles.length - 1; y >= 0; y--) {
+    for (let y = 0; y < this.particles.length; y++) {
+      // for (let y = this.particles.length - 1; y >= 0; y--) {
       for (let x = 0; x < this.particles[y].length; x++) {
         const particle = this.particles[y][x];
-        const below = this.particles[y + 1]?.[x];
-        if (below?.type === "empty" && particle.type === "particle") {
-          this.particles[y][x] = { type: "empty" };
-          this.particles[y + 1][x] = particle;
+        if (particle.type === "particle") {
+          const below = this.particles[y + 1]?.[x];
+          const belowLeft = this.particles[y + 1]?.[x - 1];
+          const belowRight = this.particles[y + 1]?.[x + 1];
+          const left = this.particles[y]?.[x - 1];
+          const right = this.particles[y]?.[x + 1];
+          if (below?.type === "empty") {
+            this.particles[y][x] = { type: "empty" };
+            this.particles[y + 1][x] = particle;
+          } else if (below?.type === "particle") {
+            // see if it falls left/right
+            if (belowLeft?.type === "empty" || belowRight?.type === "empty") {
+              if (belowLeft?.type === "empty" && left?.type === "empty") {
+                this.particles[y][x] = { type: "empty" };
+                this.particles[y + 1][x - 1] = particle;
+              } else if (
+                belowRight?.type === "empty" &&
+                right?.type === "empty"
+              ) {
+                this.particles[y][x] = { type: "empty" };
+                this.particles[y + 1][x + 1] = particle;
+              }
+            }
+          }
         }
       }
     }
@@ -165,7 +186,7 @@ export class World {
 
     return {
       x: x * this.config.particlePerBlock,
-      y: (y - 1) * this.config.particlePerBlock,
+      y: (y - 1) * this.config.particlePerBlock, // TODO: not sure why the -1 is necessary
     };
   }
 
