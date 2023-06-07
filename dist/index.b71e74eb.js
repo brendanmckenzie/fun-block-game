@@ -779,7 +779,10 @@ class World {
     }
     checkCollision() {
         const { block , particles  } = this;
-        const offset = this.transformBlockPosition(block);
+        const offset = this.transformBlockPosition({
+            ...block,
+            y: block.y + 1
+        });
         const scaledShape = (0, _shapes.scaleMatrix)(block.shape, this.config.particlePerBlock);
         out: for(let y = 0; y < scaledShape.length; y++)for(let x = 0; x < scaledShape[0].length; x++)if (scaledShape[y][x]) {
             if (offset.y + y + 1 < particles.length - this.config.particlePerBlock - 1) {

@@ -122,7 +122,10 @@ export class World {
 
   private checkCollision() {
     const { block, particles } = this;
-    const offset = this.transformBlockPosition(block);
+    const offset = this.transformBlockPosition({
+      ...block,
+      y: block.y + 1,
+    });
 
     const scaledShape = scaleMatrix(block.shape, this.config.particlePerBlock);
 
