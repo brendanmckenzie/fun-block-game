@@ -148,17 +148,53 @@ export class World {
   private checkContiguous(particles: Particle[][]) {
     // TODO: expand this to traverse over multiple rows
     const scoreBefore = this.score;
-    for (let y = particles.length - 1; y >= 0; y--) {
-      const row = particles[y];
-      if (row[0].type === "particle") {
+    type Coord = { x: number; y: number };
+    const matchingNeighbours = (start: Coord, visited: boolean[][]) => {
+      const startingParticle = particles[start.y][start.x];
+      const directions: Coord[] = [
+        { y: 0, x: -1 }, // left
+        { y: -1, x: 0 }, // up
+        { y: 0, x: 1 }, // right
+        { y: 1, x: 0 }, // down
+      ];
+      const friends: Coord[] = [];
+      for (const dir of directions) {
+        const coords = { x: start.x + dir.x, y: start.y + dir.y };
+        const offsetParticle = particles?.[coords.y]?.[coords.x];
+        if (!offsetParticle) {
+          // particle is off the board
+          continue;
+        } else if (visited[coords.y][coords.x] === true) {
+          // particle has already been checked
+          continue;
+        }
+        visited[coords.y][coords.x] = true;
         if (
-          row.every((p) => p.colour === row[0].colour && p.type === "particle")
+          offsetParticle?.type === "particle" &&
+          offsetParticle.colour === startingParticle.colour
         ) {
-          for (let x = 0; x < row.length; x++) {
-            particles[y][x] = { type: "empty" };
-          }
+          friends.push(coords);
+          friends.push(...matchingNeighbours(coords, visited));
+        }
+      }
+      return friends;
+    };
+    for (let y = 0; y < particles.length; y++) {
+      if (particles[y - 1]?.[0].colour === particles[y][0].colour) {
+        continue;
+      }
 
-          this.score += row.length;
+      if (particles[y][0].type === "particle") {
+        const visitedStore = Array.from({ length: particles.length }, () =>
+          Array.from({ length: particles[0].length }, () => false)
+        );
+        const friends = matchingNeighbours({ x: 0, y }, visitedStore);
+        if (friends.find((ent) => ent.x === particles[0].length - 1)) {
+          // we have a coloured particle at x:0 and x:$width with contiguity
+          this.score += friends.length;
+          for (const coord of friends) {
+            particles[coord.y][coord.x] = { type: "empty" };
+          }
         }
       }
     }
